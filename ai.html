@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pocket Fairways</title>
+
+<style>
+    #homeCircle {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #4CAF50, #2e7d32);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 10px;
+    text-decoration: none;
+    box-shadow: 0 0 8px rgba(0,0,0,0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    z-index: 9999;
+}
+
+#homeCircle:hover {
+    transform: scale(1.12);
+    box-shadow: 0 0 12px rgba(0,0,0,0.35);
+}
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(#87CEEB, #4CAF50);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    h1 {
+        margin-top: 10px;
+        color: white;
+        text-shadow: 2px 2px 4px #000;
+        font-size: 42px;
+        letter-spacing: 1px;
+    }
+
+    #stats {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255,255,255,0.9);
+        padding: 10px 14px;
+        border-radius: 10px;
+        box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    #gameWrapper {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #ui {
+        margin-top: 10px;
+        width: 80vw;
+        max-width: 900px;
+        background: white;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        text-align: center;
+    }
+
+    button {
+        padding: 8px 16px;
+        margin: 6px;
+        border: none;
+        border-radius: 8px;
+        background: #2e7d32;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    button:hover {
+        background: #1b5e20;
+    }
+
+    #scoreBox {
+        margin-top: 8px;
+        font-weight: bold;
+    }
+
+    /* SCORECARD MODAL */
+    #scorecardOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.55);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.4s ease forwards;
+    }
+
+    #scorecardModal {
+        background: #fffde7;
+        border: 3px solid #4CAF50;
+        border-radius: 12px;
+        padding: 20px;
+        width: 80%;
+        max-width: 900px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        animation: fadeIn 0.4s ease forwards;
+    }
+
+    #scorecardModal h2 {
+        background: #4CAF50;
+        color: white;
+        padding: 10px;
+        margin: -20px -20px 20px -20px;
+        border-radius: 8px 8px 0 0;
+        text-align: center;
+        font-size: 26px;
+    }
+
+    table.scorecard {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    table.scorecard th,
+    table.scorecard td {
+        border: 1px solid #4CAF50;
+        padding: 6px;
+        text-align: center;
+        background: #fff;
+    }
+
+    table.scorecard th {
+        background: #c8e6c9;
+        font-weight: bold;
+    }
+
+    #playAgainBtn {
+        display: block;
+        margin: 0 auto;
+        padding: 12px 24px;
+        font-size: 16px;
+        background: #4CAF50;
+        color: white;
+        border-radius: 10px;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+</style>
+</head>
+
+<body>
+<a id="homeCircle" href="index.html">Home</a>
+
+<h1>Pocket Fairways</h1>
+
+<div id="stats">
+    <strong>Player Stats</strong><br>
+    Hole: <span id="statHole">0</span>/18<br>
+    Total Strokes: <span id="statStrokes">0</span><br>
+    Hazards Hit: <span id="statHazards">0</span><br>
+    Best Score: <span id="statBest">—</span>
+</div>
+
+<div id="gameWrapper">
+    <canvas id="courseCanvas" width="900" height="420"></canvas>
+
+    <div id="ui">
+        <button id="startBtn">Start Game</button>
+        <div id="text">Welcome to Pocket Fairways! Click Start to begin.</div>
+        <div id="choices"></div>
+        <div id="scoreBox"></div>
+    </div>
+</div>
+
+<!-- SCORECARD MODAL -->
+<div id="scorecardOverlay">
+    <div id="scorecardModal">
+        <h2>Pocket Fairways — Final Scorecard</h2>
+        <div id="scorecardContent"></div>
+        <button id="playAgainBtn">Play Again</button>
+    </div>
+</div>
+
+<!-- SOUND EFFECTS -->
+<audio id="hitSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_0d4b6c2c4e.mp3?filename=golf-hit-1-112194.mp3"></audio>
+<audio id="splashSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_7e0e92ce5a.mp3?filename=splash-112193.mp3"></audio>
+<audio id="bunkerSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_8a2c57d205.mp3?filename=sand-112195.mp3"></audio>
+<audio id="cheerSound" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_6d1c44cc7d.mp3?filename=small-crowd-applause-6713.mp3"></audio>
+
+<!-- SCRIPT WILL BE INSERTED IN MESSAGE 2 -->
+<script>
+/* ============================================================
+   POCKET FAIRWAYS — FULL GAME LOGIC WITH REAL PUTTING
+   ============================================================ */
+
+const canvas = document.getElementById("courseCanvas");
+const ctx = canvas.getContext("2d");
+
+/* ------------------------------
+   GAME STATE VARIABLES
+------------------------------ */
+let holeNumber = 0;
+let par = 5;
+let distanceRemaining = 0;      // yards until green mode, feet in green mode
+let totalHoleDistance = 0;      // yards
+let strokes = 0;
+let lie = "fairway";            // fairway, rough, green
+let totalStrokes = 0;
+let hazardsHit = 0;
+
+let holePars = [];
+let holeStrokes = [];
+
+let bestScore = localStorage.getItem("pocketFairwaysBest");
+if (bestScore !== null) {
+    document.getElementById("statBest").textContent = bestScore;
+}
+
+/* ------------------------------
+   BALL ANIMATION VARIABLES
+------------------------------ */
+let animatingShot = false;
+let ballPos = { x: canvas.width * 0.5, y: canvas.height - 60 };
+let ballStart = { ...ballPos };
+let ballEnd = { ...ballPos };
+let ballT = 0;
+let pendingGreenEntry = false;
+
+
+/* ------------------------------
+   HAZARD + CLUB SETTINGS
+------------------------------ */
+const hazardChance = 0.12;
+
+// More realistic club distances (yards)
+const clubs = {
+    "Driver": [200, 230],
+    "3 Wood": [180, 210],
+    "5 Hybrid": [160, 185],
+    "6 Iron": [145, 165],
+    "7 Iron": [130, 150],
+    "8 Iron": [115, 135],
+    "9 Iron": [100, 120],
+    "Pitching Wedge": [80, 110],
+    "Gap Wedge": [70, 90],
+    "Sand Wedge": [60, 80],
+    "Lob Wedge": [50, 70],
+    "Putter": [5, 40] // used only in yards mode
+};
+
+function randRange(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function randomHazardType() {
+    const types = ["none", "bunker", "water", "trees"];
+    if (Math.random() > hazardChance) return "none";
+    return types[Math.floor(Math.random() * (types.length - 1)) + 1];
+}
+
+/* ============================================================
+   START GAME
+============================================================ */
+document.getElementById("startBtn").onclick = () => {
+    resetRound();
+    document.getElementById("startBtn").style.display = "none";
+    startHole(true);
+};
+
+/* ============================================================
+   RESET ROUND
+============================================================ */
+function resetRound() {
+    holeNumber = 0;
+    totalStrokes = 0;
+    hazardsHit = 0;
+    holePars = [];
+    holeStrokes = [];
+    strokes = 0;
+    lie = "fairway";
+    distanceRemaining = 0;
+    totalHoleDistance = 0;
+
+    document.getElementById("choices").innerHTML = "";
+    document.getElementById("scoreBox").innerHTML = "";
+    document.getElementById("text").textContent =
+        "Welcome to Pocket Fairways! Click Start to begin.";
+
+    updateStatsPanel();
+}
+
+/* ============================================================
+   START HOLE
+============================================================ */
+function startHole(firstHole = false) {
+    if (!firstHole) holeNumber++;
+    else holeNumber = 1;
+
+    if (holeNumber > 18) {
+        endGame();
+        return;
+    }
+
+    const pars = [3, 4, 5];
+    par = firstHole ? 5 : pars[Math.floor(Math.random() * pars.length)];
+
+    // Generate realistic hole lengths
+    if (par === 3) totalHoleDistance = distanceRemaining = randRange(140, 200);
+    if (par === 4) totalHoleDistance = distanceRemaining = randRange(330, 410);
+    if (par === 5) totalHoleDistance = distanceRemaining = randRange(480, 600);
+
+    totalHoleDistance = distanceRemaining;
+
+    strokes = 0;
+    lie = "fairway";
+
+    ballPos = { x: canvas.width * 0.5, y: canvas.height - 60 };
+    ballStart = { ...ballPos };
+    ballEnd = { ...ballPos };
+    ballT = 0;
+    animatingShot = false;
+
+    document.getElementById("text").innerHTML =
+        `Hole ${holeNumber} — Par ${par}<br>Distance to pin: ${Math.round(distanceRemaining)} yards`;
+
+    document.getElementById("scoreBox").innerHTML = "";
+    showClubChoices();
+    updateStatsPanel();
+}
+
+/* ============================================================
+   CLUB CHOICES
+============================================================ */
+function showClubChoices() {
+    const choices = document.getElementById("choices");
+    choices.innerHTML = "";
+
+    if (lie === "green") {
+        // Only putter on green
+        const btn = document.createElement("button");
+        btn.textContent = "Putt";
+        btn.onclick = () => swing("Putt");
+        choices.appendChild(btn);
+        return;
+    }
+
+    for (let club in clubs) {
+        const [minD] = clubs[club];
+        if (minD <= distanceRemaining + 40) {
+            const btn = document.createElement("button");
+            btn.textContent = club;
+            btn.onclick = () => swing(club);
+            choices.appendChild(btn);
+        }
+    }
+}
+
+/* ============================================================
+   SWING LOGIC
+============================================================ */
+function swing(club) {
+    if (animatingShot) return;
+
+    strokes++;
+    document.getElementById("hitSound").play();
+
+    /* ------------------------------
+       GREEN MODE — PUTTING
+    ------------------------------ */
+   
+     if (lie === "green") {
+        pendingGreenEntry = false;
+
+    let putt = randRange(0.7, 1.1) * distanceRemaining;
+
+    // Mishit putts (rare)
+    if (Math.random() < 0.10) {
+        putt *= randRange(0.4, 0.8);
+    }
+
+    distanceRemaining -= putt;
+    distanceRemaining = Math.max(distanceRemaining, 0);
+
+    // ⭐ NORMAL PUTT ANIMATION ⭐
+    ballStart = { ...ballPos };
+
+    const pinX = canvas.width * 0.5 + 10;
+    const pinY = canvas.height * 0.25 + 10;
+
+    const t = Math.min(1, putt / 40);
+
+    ballEnd = {
+        x: ballPos.x + (pinX - ballPos.x) * t,
+        y: ballPos.y + (pinY - ballPos.y) * t
+    };
+
+    ballT = 0;
+    animatingShot = true;
+
+    document.getElementById("text").innerHTML =
+        `You putted ${putt.toFixed(1)} feet.<br>
+         Distance remaining: ${distanceRemaining.toFixed(1)} feet`;
+
+    // ⭐ FINAL PUTT INTO THE HOLE ⭐
+    if (distanceRemaining <= 1.5) {
+        ballStart = { ...ballPos };
+        ballEnd = { x: pinX, y: pinY };
+        ballT = 0;
+        animatingShot = true;
+
+        finishHole();
+        return;
+    }
+
+    updateStatsPanel();
+    showClubChoices();
+    return;
+}
+
+
+    /* ------------------------------
+       FULL SWING (FAIRWAY / ROUGH)
+    ------------------------------ */
+    const [minD, maxD] = clubs[club];
+    let shot = randRange(minD, maxD);
+
+    // Skill variance (±15%)
+    shot *= randRange(0.85, 1.05);
+
+    let note = "None";
+
+    // Mishits (chunk, top, shank)
+    const mishitRoll = Math.random();
+    if (mishitRoll < 0.05) {
+        shot *= 0.25;
+        note = "Mishit (chunk)";
+    } else if (mishitRoll < 0.12) {
+        shot *= 0.55;
+        note = "Mishit (top)";
+    } else if (mishitRoll < 0.15) {
+        shot *= 0.35;
+        note = "Mishit (shank)";
+    }
+
+    if (lie === "rough") shot *= 0.9;
+
+    // Hazards
+    const hazard = randomHazardType();
+    if (hazard !== "none") {
+        hazardsHit++;
+        if (hazard === "water") {
+            document.getElementById("splashSound").play();
+            shot *= 0.25;
+            strokes++;
+            note = "Water (penalty)";
+        } else if (hazard === "bunker") {
+            document.getElementById("bunkerSound").play();
+            shot *= 0.45;
+            note = "Bunker";
+        } else if (hazard === "trees") {
+            shot *= 0.40;
+            note = "Trees";
+        }
+    }
+
+    shot = Math.max(5, Math.round(shot));
+    distanceRemaining -= shot;
+    distanceRemaining = Math.max(distanceRemaining, 0);
+
+    /* ------------------------------
+   ENTER GREEN MODE (DELAYED)
+    ------------------------------ */
+     if (distanceRemaining <= 30 && lie !== "green" && !pendingGreenEntry) {
+     pendingGreenEntry = true;   // ⭐ only set ONCE, never during putting
+    }
+
+
+    /* ------------------------------
+       BALL ANIMATION
+    ------------------------------ */
+    const progress = 1 - distanceRemaining / totalHoleDistance;
+    const maxAdvance = canvas.height * 0.55;
+    const newY = canvas.height - 60 - progress * maxAdvance;
+
+    ballStart = { ...ballPos };
+    ballEnd = { x: ballPos.x + randRange(-40, 40), y: newY };
+    ballT = 0;
+    animatingShot = true;
+
+    lie = Math.random() < 0.8 ? "fairway" : "rough";
+
+    document.getElementById("text").innerHTML =
+        `You hit your ${club} ${shot} yards.<br>
+         Lie: ${lie}<br>
+         Note: ${note}<br>
+         Distance remaining: ${Math.round(distanceRemaining)} yards`;
+
+    updateStatsPanel();
+    showClubChoices();
+}
+
+/* ------------------------------
+   APPLY GREEN MODE AFTER ANIMATION
+------------------------------ */
+if (pendingGreenEntry) {
+    pendingGreenEntry = false;
+    lie = "green";
+
+    // Assign realistic first-putt distance (8–40 ft)
+    distanceRemaining = randRange(8, 40);
+
+    document.getElementById("text").innerHTML =
+        `Approach shot! You're on the green.<br>
+         First putt: ${distanceRemaining.toFixed(1)} feet`;
+
+    updateStatsPanel();
+    showClubChoices();
+}
+
+/* ============================================================
+   ANIMATION
+============================================================ */
+function animateShot() {
+    if (!animatingShot) return;
+
+    ballT += 0.03;
+    if (ballT >= 1) {
+        ballT = 1;
+        animatingShot = false;
+        ballPos = { ...ballEnd };
+        // ⭐ APPLY GREEN MODE AFTER ANIMATION ⭐
+        if (pendingGreenEntry) {
+           pendingGreenEntry = false;
+           lie = "green";
+
+           distanceRemaining = randRange(8, 40);
+
+           document.getElementById("text").innerHTML =
+            `Approach shot! You're on the green.<br>
+             First putt: ${distanceRemaining.toFixed(1)} feet`;
+
+           updateStatsPanel();
+           showClubChoices();
+        }
+        return;
+    }
+
+    const t = ballT;
+    const x = ballStart.x + (ballEnd.x - ballStart.x) * t;
+    const groundY = ballStart.y + (ballEnd.y - ballStart.y) * t;
+    const peakHeight = -80;
+    const arcY = groundY + peakHeight * (4 * t * (1 - t));
+
+    ballPos = { x, y: arcY };
+}
+
+/* ============================================================
+   DRAW SCENE
+============================================================ */
+function drawScene() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    /* Sky */
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.5);
+    skyGrad.addColorStop(0, "#87CEEB");
+    skyGrad.addColorStop(1, "#b3e5fc");
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height * 0.5);
+
+    /* Ground */
+    const groundGrad = ctx.createLinearGradient(0, canvas.height * 0.5, 0, canvas.height);
+    groundGrad.addColorStop(0, "#4CAF50");
+    groundGrad.addColorStop(1, "#2e7d32");
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, canvas.height * 0.5, canvas.width, canvas.height * 0.5);
+
+    /* Fairway */
+    const fairwayTopWidth = canvas.width * 0.25;
+    const fairwayBottomWidth = canvas.width * 0.7;
+    const fairwayTopY = canvas.height * 0.25;
+    const fairwayBottomY = canvas.height;
+
+    ctx.beginPath();
+    ctx.moveTo((canvas.width - fairwayBottomWidth) / 2, fairwayBottomY);
+    ctx.lineTo((canvas.width + fairwayBottomWidth) / 2, fairwayBottomY);
+    ctx.lineTo((canvas.width + fairwayTopWidth) / 2, fairwayTopY);
+    ctx.lineTo((canvas.width - fairwayTopWidth) / 2, fairwayTopY);
+    ctx.closePath();
+
+    const fairGrad = ctx.createLinearGradient(0, fairwayTopY, 0, fairwayBottomY);
+    fairGrad.addColorStop(0, "#66bb6a");
+    fairGrad.addColorStop(1, "#388e3c");
+    ctx.fillStyle = fairGrad;
+    ctx.fill();
+
+    /* Fairway stripes */
+    ctx.fillStyle = "#c8e6c9";
+    for (let i = 0; i < 6; i++) {
+        const stripeY = fairwayTopY + (fairwayBottomY - fairwayTopY) * (i / 6);
+        ctx.globalAlpha = 0.25;
+        ctx.fillRect((canvas.width - fairwayBottomWidth) / 2, stripeY, fairwayBottomWidth, 8);
+    }
+    ctx.globalAlpha = 1;
+
+    /* Pin */
+    const pinX = canvas.width * 0.5 + 10;
+    const pinY = fairwayTopY + 10;
+
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(pinX, pinY);
+    ctx.lineTo(pinX, pinY - 40);
+    ctx.stroke();
+
+    ctx.fillStyle = "#f44336";
+    ctx.beginPath();
+    ctx.moveTo(pinX, pinY - 40);
+    ctx.lineTo(pinX + 25, pinY - 30);
+    ctx.lineTo(pinX, pinY - 20);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#1b5e20";
+    ctx.beginPath();
+    ctx.ellipse(pinX - 5, pinY + 5, 18, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* Character */
+    drawCharacter();
+
+    /* Ball */
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.arc(ballPos.x, ballPos.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#ccc";
+    ctx.stroke();
+
+    /* Shot arc */
+    if (animatingShot) {
+        ctx.strokeStyle = "rgba(255,255,255,0.6)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const steps = 20;
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const x = ballStart.x + (ballEnd.x - ballStart.x) * t;
+            const groundY = ballStart.y + (ballEnd.y - ballStart.y) * t;
+            const peakHeight = -80;
+            const arcY = groundY + peakHeight * (4 * t * (1 - t));
+            if (i === 0) ctx.moveTo(x, arcY);
+            else ctx.lineTo(x, arcY);
+        }
+        ctx.stroke();
+    }
+}
+
+/* ============================================================
+   DRAW CHARACTER
+============================================================ */
+function drawCharacter() {
+    const baseX = canvas.width * 0.3;
+    const baseY = canvas.height - 40;
+
+    ctx.fillStyle = "#5d4037";
+    ctx.beginPath();
+    ctx.arc(baseX, baseY - 40, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "#212121";
+    ctx.lineWidth = 3;
+
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY - 28);
+    ctx.lineTo(baseX, baseY - 5);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY - 20);
+    ctx.lineTo(baseX - 12, baseY - 5);
+    ctx.moveTo(baseX, baseY - 20);
+    ctx.lineTo(baseX + 12, baseY - 5);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(baseX, baseY - 5);
+    ctx.lineTo(baseX - 8, baseY + 15);
+    ctx.moveTo(baseX, baseY - 5);
+    ctx.lineTo(baseX + 8, baseY + 15);
+    ctx.stroke();
+
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(baseX + 10, baseY - 25);
+    ctx.lineTo(baseX + 35, baseY - 40);
+    ctx.stroke();
+}
+
+/* ============================================================
+   FINISH HOLE
+============================================================ */
+function finishHole() {
+    document.getElementById("cheerSound").play();
+    document.getElementById("choices").innerHTML = "";
+
+    holePars.push(par);
+    holeStrokes.push(strokes);
+    totalStrokes += strokes;
+
+    let diff = strokes - par;
+    let scoreText =
+        diff === 0 ? "Par" :
+        diff === -1 ? "Birdie!" :
+        diff === -2 ? "Eagle!" :
+        diff > 0 ? `+${diff}` :
+        `${diff}`;
+
+    document.getElementById("text").innerHTML =
+        `You holed out in ${strokes} strokes (Par ${par}).`;
+
+    document.getElementById("scoreBox").innerHTML =
+        `Score this hole: ${scoreText}`;
+
+    updateStatsPanel();
+
+    if (holeNumber >= 18) {
+        endGame();
+        return;
+    }
+
+    const btn = document.createElement("button");
+    btn.textContent = "Next Hole";
+    btn.onclick = () => startHole(false);
+    document.getElementById("choices").appendChild(btn);
+}
+
+/* ============================================================
+   END GAME — SCORECARD
+============================================================ */
+function endGame() {
+    document.getElementById("choices").innerHTML = "";
+    document.getElementById("text").innerHTML = "Round complete!";
+    document.getElementById("scoreBox").innerHTML = "";
+
+    const overlay = document.getElementById("scorecardOverlay");
+    const content = document.getElementById("scorecardContent");
+
+    const total = totalStrokes;
+        const avg = (total / 18).toFixed(1);
+
+    let bestHoleIndex = 0;
+    let worstHoleIndex = 0;
+    let bestDiff = holeStrokes[0] - holePars[0];
+    let worstDiff = bestDiff;
+
+    for (let i = 1; i < holeStrokes.length; i++) {
+        const diff = holeStrokes[i] - holePars[i];
+        if (diff < bestDiff) {
+            bestDiff = diff;
+            bestHoleIndex = i;
+        }
+        if (diff > worstDiff) {
+            worstDiff = diff;
+            worstHoleIndex = i;
+        }
+    }
+
+    // Update best score
+    let bestScoreText = "—";
+    if (bestScore === null || total < parseInt(bestScore)) {
+        bestScore = total;
+        localStorage.setItem("pocketFairwaysBest", bestScore);
+        bestScoreText = bestScore;
+    } else {
+        bestScoreText = bestScore;
+    }
+    document.getElementById("statBest").textContent = bestScoreText;
+
+    // Build scorecard HTML
+    let html = "<table class='scorecard'><tr><th>Hole</th>";
+    for (let i = 1; i <= 18; i++) html += `<th>${i}</th>`;
+    html += "</tr>";
+
+    html += "<tr><th>Par</th>";
+    for (let i = 0; i < 18; i++) {
+        html += `<td>${holePars[i] ?? "-"}</td>`;
+    }
+    html += "</tr>";
+
+    html += "<tr><th>You</th>";
+    for (let i = 0; i < 18; i++) {
+        html += `<td>${holeStrokes[i] ?? "-"}</td>`;
+    }
+    html += "</tr>";
+
+    html += "<tr><th>±</th>";
+    for (let i = 0; i < 18; i++) {
+        if (holePars[i] == null || holeStrokes[i] == null) {
+            html += "<td>-</td>";
+        } else {
+            const diff = holeStrokes[i] - holePars[i];
+            html += `<td>${diff > 0 ? "+" + diff : diff}</td>`;
+        }
+    }
+    html += "</tr></table>";
+
+    html += `<p><strong>Total Strokes:</strong> ${total}</p>`;
+    html += `<p><strong>Average Strokes/Hole:</strong> ${avg}</p>`;
+    html += `<p><strong>Hazards Hit:</strong> ${hazardsHit}</p>`;
+    html += `<p><strong>Best Hole:</strong> Hole ${bestHoleIndex + 1} (${bestDiff > 0 ? "+" + bestDiff : bestDiff})</p>`;
+    html += `<p><strong>Worst Hole:</strong> Hole ${worstHoleIndex + 1} (${worstDiff > 0 ? "+" + worstDiff : worstDiff})</p>`;
+    html += `<p><strong>Best Round Score:</strong> ${bestScoreText}</p>`;
+
+    content.innerHTML = html;
+    overlay.style.display = "flex";
+}
+
+/* ============================================================
+   PLAY AGAIN
+============================================================ */
+document.getElementById("playAgainBtn").onclick = () => {
+    document.getElementById("scorecardOverlay").style.display = "none";
+    document.getElementById("startBtn").style.display = "inline-block";
+    resetRound();
+};
+
+/* ============================================================
+   UPDATE STATS PANEL
+============================================================ */
+function updateStatsPanel() {
+    document.getElementById("statHole").textContent = holeNumber;
+    document.getElementById("statStrokes").textContent = totalStrokes + strokes;
+    document.getElementById("statHazards").textContent = hazardsHit;
+}
+
+/* ============================================================
+   MAIN GAME LOOP
+============================================================ */
+function loop() {
+    if (animatingShot) animateShot();
+    drawScene();
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
